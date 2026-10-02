@@ -33,44 +33,46 @@ Prerequisites:
 From the repository root, install the API dependencies and fetch the checksum-verified face models:
 
 ```bash
+cp .env.example .env
+cp apps/mobile/.env.example apps/mobile/.env
+
 cd services/api
 uv sync --dev --group face
 cd ../..
 services/api/.venv/bin/python scripts/fetch_models.py
 ```
 
+The root `.env` configures FastAPI and is loaded automatically by the backend settings. `apps/mobile/.env` configures the API URL compiled into the Flutter application. Both local files are ignored by Git; their `.env.example` templates are committed.
+
+The mobile example uses the Android emulator address:
+
+```dotenv
+API_BASE_URL=http://10.0.2.2:8000/api/v1
+```
+
+For a physical phone, edit `apps/mobile/.env` and replace it with the development computer's LAN address, for example:
+
+```dotenv
+API_BASE_URL=http://192.168.1.25:8000/api/v1
+```
+
 Start the local API with real face recognition:
 
 ```bash
 cd services/api
-APP_ENV=development \
-AUTH_PROVIDER=demo \
-DATA_PROVIDER=memory \
-FACE_PROVIDER=opencv \
 .venv/bin/uvicorn attendance_api.main:app \
   --host 0.0.0.0 --port 8000
 ```
 
 Confirm that `http://127.0.0.1:8000/api/v1/health/live` returns `{"status":"alive"}`.
 
-For an Android emulator:
-
 ```bash
 cd apps/mobile
 flutter pub get
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
+flutter run --dart-define-from-file=.env
 ```
 
-For a physical Android phone, put the phone and development computer on the same network. Replace the example address with the computer's LAN address:
-
-```bash
-cd apps/mobile
-flutter pub get
-flutter run -d DEVICE_ID \
-  --dart-define=API_BASE_URL=http://192.168.1.25:8000/api/v1
-```
-
-The submitted debug APK targets `http://10.0.2.2:8000/api/v1`, so it is intended for an Android emulator with the local API running on the host computer. Cleartext HTTP is enabled only in debug builds.
+Add `-d DEVICE_ID` when more than one Flutter device is available. The API URL is a compile-time setting, so rebuild or rerun the application after changing `apps/mobile/.env`. Cleartext HTTP is enabled only in debug builds.
 
 ## Demo flow
 
@@ -81,7 +83,7 @@ The submitted debug APK targets `http://10.0.2.2:8000/api/v1`, so it is intended
 5. Verify the receipt contains the timestamp, attendance date, coordinates, and location accuracy.
 6. Try marking attendance again to verify the daily duplicate guard.
 
-The end-to-end screen recording is supplied with the submission and demonstrates this flow on a physical Android device.
+The [end-to-end screen recording](salary_box_assing_demo.mp4) is included in the repository and demonstrates this flow on a physical Android device.
 
 ## Reset the local demo
 
@@ -113,7 +115,7 @@ dart run tool/check_format.dart
 dart run tool/check_file_size.dart
 flutter analyze
 flutter test
-flutter build apk --debug
+flutter build apk --debug --dart-define-from-file=.env
 ```
 
 Current results: all backend checks and 3 API tests pass; all mobile checks and 5 Flutter tests pass; the debug APK builds successfully.

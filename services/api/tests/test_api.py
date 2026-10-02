@@ -10,7 +10,14 @@ from attendance_api.main import create_app
 
 @pytest.fixture
 async def client() -> AsyncClient:
-    app = create_app(Settings(app_env="test"))
+    app = create_app(
+        Settings(
+            app_env="test",
+            auth_provider="demo",
+            data_provider="memory",
+            face_provider="demo",
+        )
+    )
     async with (
         app.router.lifespan_context(app),
         AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as value,
